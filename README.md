@@ -42,15 +42,22 @@ after the loan origination date (same day doesn't count), and the current rate
 is strictly above 6.00%. Logic lives in `src/lib/scra.ts`. Estimated annual
 savings = current balance × (rate − 6%).
 
-## Workflow (Import / Export page)
+## Workflow
 
-1. **Upload loans** (CSV). Borrowers are matched by SSN, loans by account
-   number, so re-uploading updates in place. Try `samples/loans-sample.csv`.
-2. **Export DMDC request**: a fixed-width Multiple Record Request `.txt` for
-   every borrower with a loan. The Customer Record ID field carries our
-   borrower id so results can be matched back.
-3. **Import DMDC results** (`.csv` or `.txt`). Each borrower's loans get a new
-   `ScraAudit` with the cap evaluation. Try `samples/dmdc-results-sample.csv`.
+1. **Upload loans** (Import / Export page, CSV). Borrowers are matched by SSN,
+   loans by account number, so re-uploading updates in place. Try
+   `samples/loans-sample.csv`.
+2. **Export DMDC request** (Loans page). `src/lib/dmdc-batch.ts` builds a
+   fixed-width Multiple Record Request with one record per borrower who has an
+   active loan (current balance above 0) not verified in the last 30 days. The
+   Customer Record ID field carries our borrower id so results match back.
+3. **Batch SCRA** (`/batch-scra`). Drop the DMDC results file (`.csv` or
+   `.txt`). `src/lib/dmdc-parser.ts` matches rows to borrowers, evaluates the
+   6% cap for each loan, and shows a preview. Nothing is written until you
+   apply. Applying writes a `ScraCheck` per loan and updates the loan's
+   `rateCapEligible`, `estimatedAnnualSavings` and `lastScraCheckAt`. An older
+   results file never overwrites a newer flag. Try
+   `samples/dmdc-results-sample.csv`.
 
 **Verify the DMDC fixed-width layouts** in `src/lib/dmdc/layout.ts` against the
 current DMDC MRR spec before sending real files. The CSV results parser matches

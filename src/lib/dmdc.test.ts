@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from "vitest";
-import { buildMrrFile, buildMrrRecord, sanitizeName } from "./request";
-import { parseActiveDutyFlag, parseDmdcResponse } from "./response";
-import { MRR_REQUEST_RECORD_LENGTH } from "./layout";
+import { buildMrrFile, buildMrrRecord, sanitizeName } from "./dmdc-batch";
+import { parseActiveDutyFlag, parseDmdcResponse } from "./dmdc-parser";
+import { MRR_REQUEST_RECORD_LENGTH } from "./dmdc-layout";
 
 beforeAll(() => {
   process.env.ENCRYPTION_KEY = "0".repeat(63) + "1";

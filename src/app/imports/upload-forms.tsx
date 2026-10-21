@@ -5,8 +5,7 @@ import { Loader2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { formatMoney } from "@/lib/format";
-import { uploadDmdcResponse, uploadLoanCsv, type ActionState } from "./actions";
+import { uploadLoanCsv, type ActionState } from "./actions";
 
 type RowError = { line: number; message: string };
 
@@ -51,29 +50,6 @@ export function LoanUploadForm() {
         <div className="flex flex-col gap-2 text-sm">
           <p>
             Processed {state.result.rowCount} row(s): {state.result.created} created, {state.result.updated} updated.
-          </p>
-          <ErrorList errors={state.result.errors} />
-        </div>
-      )}
-    </form>
-  );
-}
-
-export function DmdcUploadForm() {
-  const [state, action, pending] = useActionState(uploadDmdcResponse, {} as ActionState<never>);
-  return (
-    <form action={action} className="flex flex-col gap-4">
-      <FileField id="dmdc-file" accept=".txt,.csv,text/plain,text/csv" pending={pending} />
-      {state.error && <p className="text-destructive text-sm">{state.error}</p>}
-      {state.result && (
-        <div className="flex flex-col gap-2 text-sm">
-          <p>
-            Matched {state.result.borrowersMatched} of {state.result.rowCount} borrower(s),{" "}
-            {state.result.activeDutyCount} on active duty. Wrote {state.result.auditsCreated} loan audit(s).
-          </p>
-          <p className="font-medium text-emerald-700 dark:text-emerald-400">
-            {state.result.eligibleLoans} loan(s) eligible for 6% Rate Cap, est.{" "}
-            {formatMoney(state.result.totalAnnualSavings)} per year in savings.
           </p>
           <ErrorList errors={state.result.errors} />
         </div>

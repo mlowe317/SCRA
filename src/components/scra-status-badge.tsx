@@ -1,11 +1,15 @@
 import { BadgeCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
-type Audit = { activeDuty: boolean; rateCapEligible: boolean } | undefined;
+type Props = {
+  checked: boolean;
+  eligible: boolean;
+  activeDuty: boolean | undefined;
+};
 
-export function ScraStatusBadge({ audit }: { audit: Audit }) {
-  if (!audit) return <Badge variant="outline">Not checked</Badge>;
-  if (audit.rateCapEligible) {
+export function ScraStatusBadge({ checked, eligible, activeDuty }: Props) {
+  if (!checked) return <Badge variant="outline">Not checked</Badge>;
+  if (eligible) {
     return (
       <Badge className="bg-emerald-600 text-white">
         <BadgeCheck />
@@ -13,6 +17,6 @@ export function ScraStatusBadge({ audit }: { audit: Audit }) {
       </Badge>
     );
   }
-  if (audit.activeDuty) return <Badge variant="secondary">Active duty, not eligible</Badge>;
+  if (activeDuty) return <Badge variant="secondary">Active duty, not eligible</Badge>;
   return <Badge variant="outline">Not active duty</Badge>;
 }

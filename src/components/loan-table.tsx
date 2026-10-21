@@ -4,8 +4,10 @@ import { maskSsn } from "@/lib/ssn-mask";
 import { formatDate } from "@/lib/dates";
 import { formatMoney, formatRate } from "@/lib/format";
 import type { LoanRow } from "@/lib/queries";
+import { reverifyCutoff } from "@/lib/reverify";
 
 export function LoanTable({ loans, showSavings = false }: { loans: LoanRow[]; showSavings?: boolean }) {
+  const cutoff = reverifyCutoff();
   if (!loans.length) {
     return <p className="text-muted-foreground py-8 text-center text-sm">No loans to show.</p>;
   }
@@ -26,7 +28,8 @@ export function LoanTable({ loans, showSavings = false }: { loans: LoanRow[]; sh
       </TableHeader>
       <TableBody>
         {loans.map((loan) => {
-          const audit = loan.audits[0];
+          const check = loan.checks[0];
+          const due = !loan.lastScraCheckAt || loan.lastScraCheckAt < cutoff;
           const b = loan.borrower;
           return (
             <TableRow key={loan.id}>
@@ -37,11 +40,22 @@ export function LoanTable({ loans, showSavings = false }: { loans: LoanRow[]; sh
               <TableCell className="text-right">{formatRate(loan.currentInterestRate)}</TableCell>
               <TableCell className="text-right">{formatMoney(loan.currentBalance)}</TableCell>
               <TableCell>
-                <ScraStatusBadge audit={audit} />
+                <ScraStatusBadge
+                  checked={!!loan.lastScraCheckAt}
+                  eligible={loan.rateCapEligible}
+                  activeDuty={check?.activeDuty}
+                />
               </TableCell>
-              <TableCell>{audit ? formatDate(audit.queryDate) : ""}</TableCell>
+              <TableCell>
+                {loan.lastScraCheckAt ? formatDate(loan.lastScraCheckAt) : ""}
+                {due && Number(loan.currentBalance) > 0 && (
+                  <span className="text-amber-600 dark:text-amber-400 ml-2 text-xs">Due</span>
+                )}
+              </TableCell>
               {showSavings && (
-                <TableCell className="text-right font-medium">{formatMoney(audit?.estimatedAnnualSavings)}</TableCell>
+                <TableCell className="text-right font-medium">
+                  {loan.rateCapEligible ? formatMoney(loan.estimatedAnnualSavings) : ""}
+                </TableCell>
               )}
             </TableRow>
           );

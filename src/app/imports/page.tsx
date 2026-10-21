@@ -1,9 +1,9 @@
-import { Download } from "lucide-react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { listRecentBatches } from "@/lib/queries";
-import { DmdcUploadForm, LoanUploadForm } from "./upload-forms";
+import { LoanUploadForm } from "./upload-forms";
 
 export const dynamic = "force-dynamic";
 
@@ -21,14 +21,14 @@ export default async function ImportsPage() {
       <div>
         <h1 className="text-2xl font-semibold">Import / Export</h1>
         <p className="text-muted-foreground text-sm">
-          Upload loans, send borrowers to DMDC, then import the results to flag rate cap eligibility.
+          Bulk-load loans and see recent file activity.
         </p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <Card>
+        <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle>1. Upload loans</CardTitle>
+            <CardTitle>Upload loans</CardTitle>
             <CardDescription>
               CSV with account_number, origination_date, current_interest_rate, original_balance, current_balance,
               first_name, middle_name, last_name, ssn, date_of_birth. Existing accounts are updated.
@@ -41,32 +41,19 @@ export default async function ImportsPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>2. Export DMDC request</CardTitle>
+            <CardTitle>DMDC checks</CardTitle>
             <CardDescription>
-              Fixed-width Multiple Record Request file for every borrower with a loan, status date today. Upload it at
-              the DMDC SCRA website. The file contains full SSNs, so delete it once submitted.
+              Export the request file from the Loans page, submit it to DMDC, then review and apply the results on
+              Batch SCRA.
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <form action="/api/dmdc/request" method="post">
-              <Button type="submit">
-                <Download />
-                Download request file
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>3. Import DMDC results</CardTitle>
-            <CardDescription>
-              The .csv or .txt results file from DMDC. Each borrower&apos;s loans get a new SCRA audit with the 6% cap
-              evaluation.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <DmdcUploadForm />
+          <CardContent className="flex flex-wrap gap-2">
+            <Button asChild variant="outline">
+              <Link href="/loans">Loans</Link>
+            </Button>
+            <Button asChild>
+              <Link href="/batch-scra">Batch SCRA</Link>
+            </Button>
           </CardContent>
         </Card>
       </div>

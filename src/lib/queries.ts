@@ -12,12 +12,12 @@ const borrowerPublic = {
   ssnLastFour: true,
 } satisfies Prisma.BorrowerSelect;
 
-const loanWithLatestAudit = {
+const loanWithLatestCheck = {
   borrower: { select: borrowerPublic },
-  audits: { orderBy: [{ queryDate: "desc" }, { createdAt: "desc" }], take: 1 },
+  checks: { orderBy: [{ queryDate: "desc" }, { createdAt: "desc" }], take: 1 },
 } satisfies Prisma.LoanInclude;
 
-export type LoanRow = Prisma.LoanGetPayload<{ include: typeof loanWithLatestAudit }>;
+export type LoanRow = Prisma.LoanGetPayload<{ include: typeof loanWithLatestCheck }>;
 
 export async function listLoans(search?: string): Promise<LoanRow[]> {
   const q = search?.trim();
@@ -31,17 +31,16 @@ export async function listLoans(search?: string): Promise<LoanRow[]> {
         ],
       }
     : undefined;
-  return prisma.loan.findMany({ where, include: loanWithLatestAudit, orderBy: { accountNumber: "asc" } });
+  return prisma.loan.findMany({ where, include: loanWithLatestCheck, orderBy: { accountNumber: "asc" } });
 }
 
-/** Loans whose most recent SCRA audit flagged them for the 6% cap. */
-export async function listEligibleLoans(): Promise<LoanRow[]> {
-  const candidates = await prisma.loan.findMany({
-    where: { audits: { some: { rateCapEligible: true } } },
-    include: loanWithLatestAudit,
+/** Loans currently flagged for the 6% cap (set from their latest DMDC check). */
+export function listEligibleLoans(): Promise<LoanRow[]> {
+  return prisma.loan.findMany({
+    where: { rateCapEligible: true },
+    include: loanWithLatestCheck,
     orderBy: { accountNumber: "asc" },
   });
-  return candidates.filter((l) => l.audits[0]?.rateCapEligible);
 }
 
 export async function getDashboardStats() {
@@ -51,7 +50,7 @@ export async function getDashboardStats() {
     listEligibleLoans(),
   ]);
   const totalAnnualSavings = eligible.reduce(
-    (sum, l) => sum.plus(l.audits[0]?.estimatedAnnualSavings ?? 0),
+    (sum, l) => sum.plus(l.estimatedAnnualSavings ?? 0),
     new Prisma.Decimal(0)
   );
   return { loanCount, borrowerCount, eligible, totalAnnualSavings };

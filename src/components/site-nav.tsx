@@ -4,6 +4,7 @@ import { ShieldCheck } from "lucide-react";
 const links = [
   { href: "/", label: "Dashboard" },
   { href: "/loans", label: "Loans" },
+  { href: "/batch-scra", label: "Batch SCRA" },
   { href: "/imports", label: "Import / Export" },
 ];
 
