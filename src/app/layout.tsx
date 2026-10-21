@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { SiteNav } from "@/components/site-nav";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
@@ -15,7 +16,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="font-sans antialiased">
-        {children}
+        <SiteNav />
+        <main className="mx-auto max-w-7xl px-4 py-8">{children}</main>
         <Toaster richColors />
       </body>
     </html>

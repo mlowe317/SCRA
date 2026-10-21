@@ -32,7 +32,7 @@ model Borrower {
   dateOfBirth DateTime
 
   loans  Loan[]
-  audits ScraAudit[]
+  checks ScraCheck[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -54,7 +54,13 @@ model Loan {
   borrowerId String
   borrower   Borrower @relation(fields: [borrowerId], references: [id], onDelete: Restrict)
 
-  audits ScraAudit[]
+  checks ScraCheck[]
+
+  // Denormalized from the most recent ScraCheck, so lists and the 30-day
+  // re-verification export don't need to scan check history.
+  rateCapEligible        Boolean   @default(false)
+  estimatedAnnualSavings Decimal?
+  lastScraCheckAt        DateTime?
 
   importBatchId String?
   importBatch   ImportBatch? @relation(fields: [importBatchId], references: [id], onDelete: SetNull)
@@ -63,12 +69,14 @@ model Loan {
   updatedAt DateTime @updatedAt
 
   @@index([borrowerId])
+  @@index([lastScraCheckAt])
+  @@index([rateCapEligible])
 }
 
 // One row per DMDC check result per loan. DMDC queries are per person, so a
-// single response row for a borrower produces one audit for each of their loans
+// single response row for a borrower produces one check for each of their loans
 // (eligibility depends on each loan's origination date and rate).
-model ScraAudit {
+model ScraCheck {
   id        String   @id @default(cuid())
   queryDate DateTime
 
@@ -122,7 +130,7 @@ model ImportBatch {
   errors       String?
 
   loans  Loan[]
-  audits ScraAudit[]
+  checks ScraCheck[]
 
   createdAt DateTime @default(now())
 }

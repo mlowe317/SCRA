@@ -18,6 +18,8 @@ import {
   timingSafeEqual,
 } from "node:crypto";
 
+export { maskSsn } from "./ssn-mask";
+
 const ALGORITHM = "aes-256-gcm";
 const KEY_LENGTH = 32;
 const IV_LENGTH = 12; // 96-bit IV, the recommended size for GCM
@@ -146,13 +148,6 @@ export function isValidSsn(input: string): boolean {
 
 export function getSsnLastFour(ssn: string): string {
   return normalizeSsn(ssn).slice(-4);
-}
-
-/** Masks for display. Accepts a full SSN or just the last four digits. */
-export function maskSsn(ssnOrLastFour: string): string {
-  const digits = ssnOrLastFour.replace(/\D/g, "");
-  const lastFour = digits.slice(-4).padStart(4, "*");
-  return `***-**-${lastFour}`;
 }
 
 /**
