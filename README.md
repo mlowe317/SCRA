@@ -38,4 +38,25 @@ The schema uses no native enums or db-specific types, so nothing else changes.
 ## SCRA 6% cap rule
 
 A loan is eligible only if active duty is true, the active duty start date is
-after the loan origination date, and the current rate is strictly above 6.00%.
+after the loan origination date (same day doesn't count), and the current rate
+is strictly above 6.00%. Logic lives in `src/lib/scra.ts`. Estimated annual
+savings = current balance × (rate − 6%).
+
+## Workflow (Import / Export page)
+
+1. **Upload loans** (CSV). Borrowers are matched by SSN, loans by account
+   number, so re-uploading updates in place. Try `samples/loans-sample.csv`.
+2. **Export DMDC request**: a fixed-width Multiple Record Request `.txt` for
+   every borrower with a loan. The Customer Record ID field carries our
+   borrower id so results can be matched back.
+3. **Import DMDC results** (`.csv` or `.txt`). Each borrower's loans get a new
+   `ScraAudit` with the cap evaluation. Try `samples/dmdc-results-sample.csv`.
+
+**Verify the DMDC fixed-width layouts** in `src/lib/dmdc/layout.ts` against the
+current DMDC MRR spec before sending real files. The CSV results parser matches
+columns by header name and doesn't depend on those positions.
+
+## Not yet built
+
+- Authentication and role-based access. Required before any real data goes in.
+- Audit logging of who viewed or exported SSNs.
