@@ -1,0 +1,128 @@
+// SCRA Compliance Tracker data model.
+//
+// Local dev uses SQLite. To move to PostgreSQL, change `provider` below to
+// "postgresql", point DATABASE_URL at your Postgres instance, and run
+// `npx prisma migrate dev`. The schema avoids SQLite- or Postgres-only
+// features (no native enums, no db-specific column types) so it works on both.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Borrower {
+  id         String  @id @default(cuid())
+  firstName  String
+  middleName String?
+  lastName   String
+
+  // SSN is never stored in plaintext. `ssnEncrypted` is AES-256-GCM output from
+  // src/lib/encryption.ts. `ssnHash` is a keyed HMAC (blind index) used to
+  // de-duplicate borrowers and match DMDC response rows back to a borrower
+  // without decrypting every record. `ssnLastFour` supports search and the
+  // masked display (***-**-1234).
+  ssnEncrypted String
+  ssnHash      String @unique
+  ssnLastFour  String
+
+  dateOfBirth DateTime
+
+  loans  Loan[]
+  audits ScraAudit[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ssnLastFour])
+  @@index([lastName, firstName])
+}
+
+model Loan {
+  id              String   @id @default(cuid())
+  accountNumber   String   @unique
+  originationDate DateTime
+
+  // Interest rate is stored as a percentage, e.g. 7.250 means 7.25% APR.
+  currentInterestRate Decimal
+  originalBalance     Decimal
+  currentBalance      Decimal
+
+  borrowerId String
+  borrower   Borrower @relation(fields: [borrowerId], references: [id], onDelete: Restrict)
+
+  audits ScraAudit[]
+
+  importBatchId String?
+  importBatch   ImportBatch? @relation(fields: [importBatchId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([borrowerId])
+}
+
+// One row per DMDC check result per loan. DMDC queries are per person, so a
+// single response row for a borrower produces one audit for each of their loans
+// (eligibility depends on each loan's origination date and rate).
+model ScraAudit {
+  id        String   @id @default(cuid())
+  queryDate DateTime
+
+  activeDuty            Boolean
+  activeDutyStartDate   DateTime?
+  activeDutyEndDate     DateTime?
+  dmdcCertificateNumber String?
+
+  // Snapshot of the loan at audit time, so the record stays accurate if the
+  // loan's rate or balance changes later.
+  rateAtAudit    Decimal
+  balanceAtAudit Decimal
+
+  // 6% cap result: activeDuty AND activeDutyStartDate > loan.originationDate
+  // AND rateAtAudit > 6.00. Savings are the estimated annual interest saved.
+  rateCapEligible        Boolean
+  estimatedAnnualSavings Decimal?
+
+  // "DMDC_IMPORT" | "MANUAL" (validated in application code, not a DB enum,
+  // so the schema stays portable between SQLite and PostgreSQL).
+  source String @default("DMDC_IMPORT")
+
+  borrowerId String
+  borrower   Borrower @relation(fields: [borrowerId], references: [id], onDelete: Cascade)
+
+  loanId String
+  loan   Loan   @relation(fields: [loanId], references: [id], onDelete: Cascade)
+
+  importBatchId String?
+  importBatch   ImportBatch? @relation(fields: [importBatchId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([loanId, queryDate])
+  @@index([borrowerId, queryDate])
+  @@index([rateCapEligible])
+}
+
+// Audit trail for bulk file operations (loan CSV uploads, DMDC request
+// exports, DMDC response imports).
+model ImportBatch {
+  id       String @id @default(cuid())
+  // "LOAN_CSV" | "DMDC_REQUEST_EXPORT" | "DMDC_RESPONSE_IMPORT"
+  kind     String
+  fileName String
+
+  rowCount     Int     @default(0)
+  successCount Int     @default(0)
+  errorCount   Int     @default(0)
+  // JSON-encoded array of { row, message }. Must never contain SSNs.
+  errors       String?
+
+  loans  Loan[]
+  audits ScraAudit[]
+
+  createdAt DateTime @default(now())
+}
